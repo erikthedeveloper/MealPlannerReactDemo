@@ -2,6 +2,11 @@ import React from 'react';
 
 import moment from 'moment';
 import {
+  State,
+  Navigation,
+  Transition
+} from 'react-router';
+import {
   Styles,
   List,
   ListDivider,
@@ -16,7 +21,7 @@ function isNotSunday(date) {
   return date.getDay() !== 0;
 }
 
-const meals = ['Burritos', 'Taco Soup', 'Fajitas', 'Refried Beans', 'Hamburgers', 'Steak'];
+const meals = ['Burritos', 'Taco Soup', 'Fajitas', 'Refried Beans', 'Hamburgers', 'Steak', 'Cheesecake', 'Hot Dogs', 'Curry', 'Chinese Takeout'];
 
 const styles = {
   col4: {
@@ -32,14 +37,26 @@ const styles = {
 
 const TwoWeekPlan = React.createClass({
 
-  getInitialState() {
-    return {
-      selectedDate: moment().startOf('week').toDate()
+  mixins: [State, Navigation],
+
+  statics: {
+    willTransitionTo(transition, params, query, callback) {
+      const paramMoment = moment(params.date);
+
+      if (paramMoment.day() !== 0) {
+        transition.redirect('weekly_planner', {
+          date: paramMoment.startOf('week').format('YYYY-MM-DD')
+        });
+      }
+
+      callback();
     }
   },
 
   handleSelectDate(e, date) {
-    this.setState({selectedDate: date});
+    this.transitionTo('weekly_planner', {
+      date: moment(date).format('YYYY-MM-DD')
+    });
   },
 
   openWeekPicker() {
@@ -47,8 +64,7 @@ const TwoWeekPlan = React.createClass({
   },
 
   render() {
-    const { selectedDate } = this.state;
-    const selectedMoment = moment(selectedDate);
+    const selectedMoment = moment(this.getParams().date);
 
     const listHeader = (
       <h3>
@@ -57,15 +73,17 @@ const TwoWeekPlan = React.createClass({
       </h3>
     );
 
-    const randMeals = shuffle(meals).slice(Math.floor(Math.random() * meals.length));
-
+    const randMeals = shuffle(meals).slice(Math.floor(Math.random() * meals.length) - 4);
     return (
       <div>
         <div style={styles.col6}>
           <List subheader={listHeader}>
             {randMeals.map(meal =>
               <div key={meal}>
-                <ListItem primaryText={meal} />
+                <ListItem
+                  primaryText={meal}
+                  leftIcon={<IconButton icon={Math.random() > 0.6 ? 'pizza' : 'cutlery'} />}
+                />
                 <ListDivider />
               </div>
             )}
@@ -75,7 +93,7 @@ const TwoWeekPlan = React.createClass({
         <div style={styles.col6}>
           <DatePicker
               ref="week_picker"
-              value={selectedDate}
+              value={selectedMoment.toDate()}
               onChange={this.handleSelectDate}
               autoOk={true}
               textFieldStyle={{display: 'none'}}
